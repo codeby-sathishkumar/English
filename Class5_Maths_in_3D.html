@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maths in 3D – Class 5</title>
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.168.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.168.0/examples/jsm/"
+} }
+</script>
+<style>
+:root{--ink:#26262b;--muted:#77777f;--line:#e7e4dd;--paper:#faf9f6;--accent:#3b6fd8;--hi:#e0801c;--ok:#3d9a50}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+#app{display:grid;grid-template-columns:270px 1fr;height:100vh}
+aside{border-right:1px solid var(--line);background:#fff;overflow:auto;padding:14px 0 30px}
+aside .brand{padding:4px 20px 12px;font-weight:700;font-size:19px}
+aside .brand span{color:var(--accent)}
+aside .grp{padding:14px 20px 4px;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+aside button{all:unset;display:flex;gap:10px;align-items:baseline;width:100%;box-sizing:border-box;padding:7px 20px;font-size:15px;cursor:pointer;border-left:3px solid transparent}
+aside button .n{font-size:12px;color:var(--muted);min-width:16px}
+aside button:hover{background:#f5f3ee}
+aside button.on{border-left-color:var(--accent);background:#f2f5fc;color:var(--accent);font-weight:600}
+main{display:grid;grid-template-rows:auto 1fr auto;min-width:0;height:100vh}
+#top{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--line);background:#fff}
+#ltitle{font-size:20px;font-weight:700}
+#stepno{margin-left:auto;font-size:13px;color:var(--muted)}
+#stage{position:relative;min-height:0;overflow:hidden}
+#view{position:absolute;inset:0}
+#view canvas{display:block;outline:none}
+#eq{position:absolute;left:50%;top:14px;transform:translateX(-50%);max-width:92%;background:rgba(255,255,255,.93);border:1px solid var(--line);border-radius:14px;padding:10px 20px;font-size:23px;font-weight:600;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.06);pointer-events:none;transition:opacity .3s}
+#eq:empty{opacity:0}
+#eq .s{font-size:15px;font-weight:500;color:var(--muted);display:block;margin-top:2px}
+#eq .a{color:var(--accent)} #eq .h{color:var(--hi)} #eq .g{color:var(--ok)}
+#eq table{border-collapse:collapse;margin:0 auto;font-family:Consolas,"Courier New",monospace;font-size:24px}
+#eq td{padding:0 6px;text-align:right}
+#eq tr.ln td{border-top:2px solid var(--ink)}
+#eq td.c{font-size:14px;color:var(--hi);height:14px}
+#eq .fr,#say .fr{display:inline-flex;flex-direction:column;vertical-align:middle;line-height:1.05;margin:0 3px;font-size:.82em;text-align:center}
+#eq .fr>span:first-child,#say .fr>span:first-child{border-bottom:2px solid currentColor;padding:0 3px}
+#eq td.note{font-family:"Segoe UI",sans-serif;font-size:13px;color:var(--muted);text-align:left}
+#hint{position:absolute;right:14px;bottom:10px;font-size:12px;color:var(--muted);pointer-events:none}
+#bottom{border-top:1px solid var(--line);background:#fff;padding:14px 22px 16px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+#say{font-size:19px;line-height:1.5;min-height:58px}
+#say b{color:var(--accent)} #say .h{color:var(--hi);font-weight:600} #say .g{color:var(--ok);font-weight:600}
+#ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.btn{font:inherit;font-size:15px;padding:9px 16px;border-radius:10px;border:1px solid #d6d2c8;background:#fff;color:var(--ink);cursor:pointer}
+.btn:hover{background:#f5f3ee}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#2f5fc2}
+.btn.tog.on{background:#eef3fc;border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:default}
+#dots{display:flex;gap:5px;margin-top:8px}
+#dots i{width:9px;height:9px;border-radius:50%;background:#e2ded5;cursor:pointer}
+#dots i.on{background:var(--accent)}
+#dots i.done{background:#b8c9ee}
+/* 3D labels */
+.lbl{font:600 15px "Segoe UI",system-ui,sans-serif;color:var(--ink);background:#fff;border:1px solid #e3dfd6;border-radius:999px;padding:3px 10px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:opacity .35s;pointer-events:none;user-select:none}
+.lbl.big{font-size:22px;padding:4px 14px}
+.lbl.huge{font-size:40px;padding:2px 18px;border-radius:16px}
+.lbl.sm{font-size:12px;padding:1px 7px}
+.lbl.plain{background:none;border:none;box-shadow:none}
+.lbl.q{border:2px dashed var(--hi);color:var(--hi)}
+.lbl.ok{border:2px solid var(--ok);color:var(--ok)}
+.lbl.bad{border:2px solid #d9534f;color:#d9534f}
+.lbl.blue{border:2px solid var(--accent);color:var(--accent)}
+.lbl.node{font-size:17px;background:none;border:none;box-shadow:none;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+#loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px;text-align:center;padding:30px}
+@media (max-width:860px){
+  #app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  aside{display:flex;overflow-x:auto;padding:6px;border-right:none;border-bottom:1px solid var(--line);height:auto}
+  aside .brand,aside .grp{display:none}
+  aside button{width:auto;white-space:nowrap;border-left:none;border-bottom:3px solid transparent}
+  aside button.on{border-bottom-color:var(--accent)}
+  main{height:calc(100vh - 52px)}
+  #bottom{grid-template-columns:1fr}
+  #say{font-size:17px}
+  #eq{font-size:18px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side"><div class="brand">Maths <span>in 3D</span></div></aside>
+  <main>
+    <div id="top"><div id="ltitle">Loading…</div><div id="stepno"></div></div>
+    <div id="stage">
+      <div id="view"></div>
+      <div id="eq"></div>
+      <div id="hint">drag to rotate · scroll to zoom · ← → keys</div>
+      <div id="loading">Loading the 3D board…<br><small>(needs an internet connection the first time to load Three.js)</small></div>
+    </div>
+    <div id="bottom">
+      <div><div id="say"></div><div id="dots"></div></div>
+      <div id="ctrl">
+        <button class="btn" id="bPrev">◀ Back</button>
+        <button class="btn" id="bReplay" title="Replay this step">↻</button>
+        <button class="btn primary" id="bNext">Next ▶</button>
+        <button class="btn tog" id="bAuto" title="Play all steps automatically">▶▶ Auto</button>
+        <button class="btn tog" id="bVoice" title="Read each step aloud">🔊 Voice</button>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+  setTimeout(()=>{ if(!window.__3dReady){ const l=document.getElementById('loading'); if(l) l.innerHTML='Could not load Three.js.<br><small>Please check your internet connection and reload the page.</small>'; } }, 15000);
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* ================================================================
+   RENDERER / SCENE
+   ================================================================ */
+const view = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+view.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.inset = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+view.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#faf9f6');
+scene.fog = new THREE.Fog('#faf9f6', 45, 90);
+
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 200);
+camera.position.set(0, 11, 16);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI * 0.47;
+controls.minDistance = 4;
+controls.maxDistance = 60;
+controls.target.set(0, 0.5, 0);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d4c8, 1.9));
+const sun = new THREE.DirectionalLight(0xffffff, 2.3);
+sun.position.set(8, 18, 10);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 60 });
+sun.shadow.bias = -0.0004;
+sun.shadow.radius = 4;
+scene.add(sun);
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.ShadowMaterial({ opacity: 0.13 }));
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+function resize() {
+  const w = view.clientWidth, h = view.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  renderer.domElement.style.width = w + 'px';
+  renderer.domElement.style.height = h + 'px';
+  labelRenderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(view);
+resize();
+
+/* ================================================================
+   TWEENS  (every animation belongs to a "run"; changing step cancels it)
+   ================================================================ */
+let RUN = 0, INSTANT = false;
+const tweens = [];
+const easeIO = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeIn = t => t * t;
+const easeOutBack = t => { const c = 1.70158, c3 = c + 1; return 1 + c3 * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+
+function tw(target, to, ms = 700, opt = {}) {
+  if (INSTANT || ms <= 0) { Object.assign(target, to); opt.update && opt.update(1); return Promise.resolve(); }
+  return new Promise(res => tweens.push({ target, to, from: null, ms, delay: opt.delay || 0, t0: performance.now(), res, run: RUN, ease: opt.ease || easeIO, update: opt.update }));
+}
+function wait(ms) {
+  if (INSTANT) return Promise.resolve();
+  const run = RUN;
+  return new Promise(r => setTimeout(() => { if (run === RUN) r(); }, ms));
+}
+function tickTweens(now) {
+  for (let i = tweens.length - 1; i >= 0; i--) {
+    const w = tweens[i];
+    if (w.run !== RUN) { tweens.splice(i, 1); continue; }
+    let t = (now - w.t0 - w.delay) / w.ms;
+    if (t < 0) continue;
+    if (!w.from) { w.from = {}; for (const k in w.to) w.from[k] = w.target[k]; }
+    t = Math.min(1, t);
+    const e = w.ease(t);
+    for (const k in w.to) w.target[k] = w.from[k] + (w.to[k] - w.from[k]) * e;
+    w.update && w.update(e);
+    if (t >= 1) { tweens.splice(i, 1); w.res(); }
+  }
+}
+
+/* ================================================================
+   BUILDING BLOCKS
+   ================================================================ */
+const GEO = {};
+function roundedBoxGeo(w, h, d, r = 0.08) {
+  const key = [w, h, d, r].map(v => v.toFixed(3)).join('|');
+  if (GEO[key]) return GEO[key];
+  r = Math.min(r, w / 2 - 0.01, h / 2 - 0.01, d / 2 - 0.01);
+  const iw = w - 2 * r, ih = h - 2 * r, cr = Math.min(r, iw / 2, ih / 2) * 0.9;
+  const s = new THREE.Shape();
+  const x0 = -iw / 2, y0 = -ih / 2;
+  s.moveTo(x0 + cr, y0);
+  s.lineTo(x0 + iw - cr, y0); s.quadraticCurveTo(x0 + iw, y0, x0 + iw, y0 + cr);
+  s.lineTo(x0 + iw, y0 + ih - cr); s.quadraticCurveTo(x0 + iw, y0 + ih, x0 + iw - cr, y0 + ih);
+  s.lineTo(x0 + cr, y0 + ih); s.quadraticCurveTo(x0, y0 + ih, x0, y0 + ih - cr);
+  s.lineTo(x0, y0 + cr); s.quadraticCurveTo(x0, y0, x0 + cr, y0);
+  const g = new THREE.ExtrudeGeometry(s, { depth: d - 2 * r, bevelEnabled: true, bevelThickness: r, bevelSize: r, bevelSegments: 3, curveSegments: 3 });
+  g.translate(0, 0, -(d - 2 * r) / 2);
+  g.computeVertexNormals();
+  g.userData.shared = true;
+  return (GEO[key] = g);
+}
+const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.62, metalness: 0.02, ...o });
+function shadowy(m) { m.castShadow = true; m.receiveShadow = true; return m; }
+function blk(w, h, d, color, r = 0.08) { return shadowy(new THREE.Mesh(roundedBoxGeo(w, h, d, r), mat(color))); }
+function cube(color, s = 0.92) { return blk(s, s, s, color, s * 0.09); }
+function ball(r, color) {
+  const k = 'sph' + r;
+  if (!GEO[k]) { GEO[k] = new THREE.SphereGeometry(r, 32, 20); GEO[k].userData.shared = true; }
+  return shadowy(new THREE.Mesh(GEO[k], mat(color, { roughness: 0.45 })));
+}
+function disc(r, h, color) {
+  const k = 'cyl' + r + '_' + h;
+  if (!GEO[k]) { GEO[k] = new THREE.CylinderGeometry(r, r * 0.94, h, 48); GEO[k].userData.shared = true; }
+  return shadowy(new THREE.Mesh(GEO[k], mat(color)));
+}
+function gridTexture(cells = 1) {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, 128, 128);
+  g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = 5; g.strokeRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+function gridSlab(nx, nz, unit, h, color) {
+  const tex = gridTexture(); tex.repeat.set(nx, nz);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(nx * unit, h, nz * unit), mat(color, { map: tex }));
+  return shadowy(m);
+}
+function lbl(html, cls = '') {
+  const d = document.createElement('div');
+  d.className = 'lbl ' + cls;
+  d.innerHTML = html;
+  const o = new CSS2DObject(d);
+  o.userData.isLabel = true;
+  return o;
+}
+function setLbl(o, html, cls) { o.element.innerHTML = html; if (cls !== undefined) o.element.className = 'lbl ' + cls; }
+function fadeLbl(o, on) { o.element.style.opacity = on ? '1' : '0'; }
+const at = (o, x, y, z) => { o.position.set(x, y, z); return o; };
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+function pop(o, ms = 450, delay = 0) {
+  o.visible = true;
+  const s = o.userData.baseScale || 1;
+  o.scale.setScalar(0.001);
+  return tw(o.scale, { x: s, y: s, z: s }, ms, { delay, ease: easeOutBack });
+}
+async function vanish(o, ms = 350, delay = 0) {
+  await tw(o.scale, { x: 0.001, y: 0.001, z: 0.001 }, ms, { delay });
+  o.visible = false;
+}
+function move(o, x, y, z, ms = 700, delay = 0) {
+  const to = {}; if (x !== null) to.x = x; if (y !== null) to.y = y; if (z !== null) to.z = z;
+  return tw(o.position, to, ms, { delay });
+}
+function arc(o, x, y, z, h = 1.5, ms = 800, delay = 0) {
+  let from = null; const to = V(x, y, z);
+  return tw({ t: 0 }, { t: 1 }, ms, { delay, ease: easeIO, update: e => {
+    if (!from) from = o.position.clone();
+    o.position.lerpVectors(from, to, e);
+    o.position.y += Math.sin(Math.PI * e) * h;
+  } });
+}
+function recolor(o, color, ms = 400) {
+  const c = new THREE.Color(color), m = o.material;
+  if (!m || !m.color) return Promise.resolve();
+  const from = m.color.clone();
+  return tw({ t: 0 }, { t: 1 }, ms, { update: e => m.color.copy(from).lerp(c, e) });
+}
+function cam(px, py, pz, tx, ty, tz, ms = 1300) {
+  return Promise.all([tw(camera.position, { x: px, y: py, z: pz }, ms), tw(controls.target, { x: tx, y: ty, z: tz }, ms)]);
+}
+function bounce(o, h = 0.6, ms = 420, delay = 0) { const p = o.position.clone(); return arc(o, p.x, p.y, p.z, h, ms, delay); }
+
+/* Indian number format */
+function inr(n) {
+  let s = String(Math.abs(Math.round(n)));
+  if (s.length > 3) { const last = s.slice(-3); s = s.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + last; }
+  return (n < 0 ? '−' : '') + s;
+}
+
+/* Colours: soft toy-block palette */
+const C = {
+  one: '#f3c44f', one2: '#f7a35c', ten: '#4fb3a6', ten2: '#93d3c9', hun: '#6d9ff0', th: '#ef7d6d',
+  plate: '#f4f0e8', mat: '#efece5', grey: '#d9d4ca', dark: '#8a8577', blue: '#5b8def', orange: '#f28c28',
+  green: '#5cb870', purple: '#9b80d4', red: '#e26060', pink: '#f28bb3', cake: '#e8b57a', cream: '#fff4e0', ghost: '#f6b26b'
+};
+
+/* ================================================================
+   PLAYER
+   ================================================================ */
+const LESSONS = [];
+const lesson = L => LESSONS.push(L);
+let S = null, LES = null, STEP = 0, AUTO = false, VOICE = false;
+const $ = s => document.querySelector(s);
+
+function newStage() {
+  if (S) {
+    S.root.traverse(o => {
+      if (o.isCSS2DObject && o.element) o.element.remove();
+      if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();
+      if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
+    });
+    scene.remove(S.root);
+  }
+  labelRenderer.domElement.replaceChildren();
+  const root = new THREE.Group();
+  scene.add(root);
+  S = { root, items: [] };
+  S.add = (...os) => { os.forEach(o => { root.add(o); S.items.push(o); }); return os[0]; };
+  return S;
+}
+
+const frac = (n, d) => `<span class="fr"><span>${n}</span><span>${d}</span></span>`;
+const P = t => `<span style="font-size:17px;font-weight:500;line-height:1.35;display:block;max-width:760px">${t}</span>`;
+
+/* ---------- speech ---------- */
+const ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+const w99 = n => n < 20 ? ONES[n] : TENS[Math.floor(n / 10)] + (n % 10 ? ' ' + ONES[n % 10] : '');
+const w999 = n => [Math.floor(n / 100) ? ONES[Math.floor(n / 100)] + ' hundred' : '', n % 100 ? w99(n % 100) : ''].filter(Boolean).join(' ');
+function wordsIN(n) {
+  if (!n) return 'zero';
+  const cr = Math.floor(n / 1e7), lk = Math.floor(n / 1e5) % 100, th = Math.floor(n / 1000) % 100, r = n % 1000;
+  return [cr ? w999(cr) + ' crore' : '', lk ? w99(lk) + ' lakh' : '', th ? w99(th) + ' thousand' : '', r ? w999(r) : ''].filter(Boolean).join(' ');
+}
+function speakable(html) {
+  let t = html.replace(/<span class="fr"><span>(\d+)<\/span><span>(\d+)<\/span><\/span>/g, ' $1 over $2 ').replace(/<[^>]+>/g, ' ');
+  t = t.replace(/₹\s?([\d,]+)/g, (m, d) => wordsIN(+d.replace(/,/g, '')) + ' rupees');
+  t = t.replace(/\d{1,3}(?:,\d{2,3})+/g, m => wordsIN(+m.replace(/,/g, '')));
+  return t.replace(/×/g, ' times ').replace(/÷/g, ' divided by ').replace(/−/g, ' minus ').replace(/→/g, ', so ').replace(/✔/g, '').replace(/✗/g, ' no ');
+}
+function stopSpeech() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+function speak(html) {
+  if (!('speechSynthesis' in window)) return Promise.resolve();
+  stopSpeech();
+  return new Promise(res => {
+    const u = new SpeechSynthesisUtterance(speakable(html));
+    u.rate = 0.92;
+    const vs = speechSynthesis.getVoices();
+    const v = vs.find(v => /en-IN/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang));
+    if (v) u.voice = v;
+    u.onend = res; u.onerror = res;
+    speechSynthesis.speak(u);
+    setTimeout(res, 30000);
+  });
+}
+
+/* ---------- navigation ---------- */
+async function goto(i) {
+  const L = LES;
+  i = Math.max(0, Math.min(L.steps.length - 1, i));
+  RUN++; const my = RUN; tweens.length = 0; stopSpeech();
+  newStage(); STEP = i;
+  INSTANT = true;
+  const c = L.cam || [0, 11, 16, 0, 0.5, 0];
+  camera.position.set(c[0], c[1], c[2]); controls.target.set(c[3], c[4], c[5]);
+  if (L.setup) L.setup(S);
+  for (let k = 0; k < i; k++) { if (L.steps[k].run) await L.steps[k].run(S); if (my !== RUN) return; }
+  INSTANT = false;
+  showUI();
+  const st = L.steps[i];
+  const talk = VOICE ? speak(st.say) : Promise.resolve();
+  const anim = st.run ? st.run(S) : Promise.resolve();
+  await Promise.all([anim, talk]);
+  if (my !== RUN) return;
+  if (AUTO) {
+    const words = st.say.replace(/<[^>]+>/g, '').split(/\s+/).length;
+    await wait(VOICE ? 900 : Math.max(2200, words * 330));
+    if (my !== RUN) return;
+    if (STEP < L.steps.length - 1) goto(STEP + 1); else setAuto(false);
+  }
+}
+function showUI() {
+  const st = LES.steps[STEP];
+  $('#say').innerHTML = st.say;
+  $('#eq').innerHTML = st.eq || '';
+  $('#stepno').textContent = `Step ${STEP + 1} of ${LES.steps.length}`;
+  $('#bPrev').disabled = STEP === 0;
+  $('#bNext').textContent = STEP === LES.steps.length - 1 ? 'Next lesson ▶' : 'Next ▶';
+  $('#dots').innerHTML = LES.steps.map((_, k) => `<i class="${k === STEP ? 'on' : k < STEP ? 'done' : ''}" data-k="${k}"></i>`).join('');
+}
+function openLesson(id, step = 0) {
+  LES = LESSONS.find(l => l.id === id) || LESSONS[0];
+  document.querySelectorAll('#side button').forEach(b => b.classList.toggle('on', b.dataset.id === LES.id));
+  $('#ltitle').textContent = LES.title;
+  history.replaceState(null, '', '#' + LES.id);
+  goto(step);
+}
+function next() {
+  if (STEP < LES.steps.length - 1) goto(STEP + 1);
+  else { const i = LESSONS.indexOf(LES); if (i < LESSONS.length - 1) openLesson(LESSONS[i + 1].id); }
+}
+function setAuto(on) { AUTO = on; $('#bAuto').classList.toggle('on', on); }
+
+/* ================================================================
+   SHARED LESSON HELPERS
+   ================================================================ */
+const popAll = (list, step = 20, ms = 420) => Promise.all(list.map((o, i) => pop(o, ms, i * step)));
+const liftAway = (o, delay = 0) => Promise.all([move(o, null, o.position.y + 3, null, 600, delay), vanish(o, 300, delay + 380)]);
+function hideAll(S, except = []) { return Promise.all(S.items.filter(o => o.visible && !except.includes(o)).map((o, i) => vanish(o, 300, Math.min(i * 3, 300)))); }
+
+/* base-ten mats */
+const rodX = i => -11.2 + i * 1.2;
+const rodZ = k => -4.5 + k;
+const oneP = i => [1.5 + (i % 5) * 1.1, 0.58, -4.4 + Math.floor(i / 5) * 1.1];
+function placeMats(S) {
+  const tm = S.add(at(blk(10.8, 0.12, 11.4, C.mat, 0.05), -6.4, 0.06, 0));
+  const om = S.add(at(blk(7, 0.12, 11.4, C.mat, 0.05), 4.1, 0.06, 0));
+  tm.castShadow = om.castShadow = false;
+  S.add(at(lbl('TENS', 'plain big'), -6.4, 0.2, -6.5));
+  S.add(at(lbl('ONES', 'plain big'), 4.1, 0.2, -6.5));
+  S.tc = S.add(at(lbl('', 'blue'), -6.4, 0.3, 6.5));
+  S.oc = S.add(at(lbl('', 'blue'), 4.1, 0.3, 6.5));
+  fadeLbl(S.tc, 0); fadeLbl(S.oc, 0);
+}
+function counts(S, t, o, cls = 'blue') {
+  if (t !== null) { setLbl(S.tc, t, cls); fadeLbl(S.tc, 1); }
+  if (o !== null) { setLbl(S.oc, o, cls); fadeLbl(S.oc, 1); }
+}
+function makeRod(S, i, color) { const r = []; for (let k = 0; k < 10; k++) r.push(S.add(at(cube(color), rodX(i), 0.58, rodZ(k)))); return r; }
+
+/* bars for word problems (pivot at the LEFT end) */
+function bar(len, color, text = '', cls = '', h = 0.9, d = 1.4) {
+  const g = new THREE.Group();
+  const m = blk(Math.max(len, 0.12), h, d, color, 0.1);
+  m.position.set(len / 2, h / 2, 0);
+  g.add(m); g.userData.m = m; g.userData.len = len;
+  if (text !== null) { const l = lbl(text, cls); l.position.set(len / 2, h + 0.5, 0); g.add(l); g.userData.l = l; }
+  return g;
+}
+function grow(g, ms = 700, delay = 0) { g.visible = true; g.scale.x = 0.001; return tw(g.scale, { x: 1 }, ms, { delay }); }
+function ghost(g, on, ms = 500) {
+  const m = g.userData.m; m.material.transparent = true; m.material.depthWrite = !on; m.castShadow = !on;
+  return tw(m.material, { opacity: on ? 0.28 : 1 }, ms);
+}
+function brace(len, text, cls = '') {
+  const g = new THREE.Group();
+  g.add(at(blk(len, 0.1, 0.22, C.dark, 0.04), len / 2, 0, 0));
+  g.add(at(blk(0.1, 0.5, 0.22, C.dark, 0.04), 0.05, -0.2, 0));
+  g.add(at(blk(0.1, 0.5, 0.22, C.dark, 0.04), len - 0.05, -0.2, 0));
+  const l = lbl(text, cls); l.position.set(len / 2, 0.55, 0); g.add(l); g.userData.l = l;
+  return g;
+}
+function floorBrace(len, text, cls = '') {
+  const g = new THREE.Group();
+  g.add(at(blk(len, 0.1, 0.22, C.dark, 0.04), len / 2, 0.05, 0));
+  g.add(at(blk(0.12, 0.1, 0.8, C.dark, 0.04), 0.06, 0.05, -0.35));
+  g.add(at(blk(0.12, 0.1, 0.8, C.dark, 0.04), len - 0.06, 0.05, -0.35));
+  const l = lbl(text, cls); l.position.set(len / 2, 0.3, 0.75); g.add(l); g.userData.l = l;
+  return g;
+}
+
+/* ================================================================
+   1. PLACE VALUE
+   ================================================================ */
+{
+  const u = 0.5, cs = u * 0.92;
+  const xs = i => (i - 4.5) * u * 1.3;
+  lesson({
+    id: 'place', group: 'Numbers', title: 'Place value: the power of 10', cam: [0, 3.2, 6, 0, 0.3, 0],
+    steps: [
+      { say: 'This small cube is <b>ONE</b>. Everything in our number system is built from it.', eq: '1',
+        run: async S => {
+          S.c = [S.add(at(cube(C.one, cs), 0, cs / 2, 0))];
+          S.tag = S.add(at(lbl('1 one', 'big'), 0, 1.1, 0));
+          await pop(S.c[0], 600);
+        } },
+      { say: 'Put ten ones in a row and count them: 1, 2, 3 … <b>10</b>.', eq: '1 + 1 + 1 + … = 10 ones',
+        run: async S => {
+          S.nums = [];
+          cam(0, 4.2, 8.5, 0, 0.3, 0);
+          move(S.c[0], xs(0), null, null, 500);
+          for (let i = 1; i < 10; i++) S.c.push(S.add(at(cube(C.one, cs), xs(i), cs / 2, 0)));
+          for (let i = 0; i < 10; i++) { const n = S.add(at(lbl(String(i + 1), 'sm'), xs(i), 0.75, 0)); S.nums.push(n); fadeLbl(n, 0); }
+          setLbl(S.tag, 'counting…'); S.tag.position.set(0, 1.5, 0);
+          for (let i = 1; i < 10; i++) pop(S.c[i], 400, i * 170);
+          for (let i = 0; i < 10; i++) { await wait(170); fadeLbl(S.nums[i], 1); }
+          setLbl(S.tag, '10 ones', 'big');
+        } },
+      { say: 'Ten ones join together into <b>ONE TEN</b> — a rod.', eq: '10 ones = <span class="a">1 ten</span>',
+        run: async S => {
+          S.nums.forEach(n => { fadeLbl(n, 0); n.visible = false; });
+          await Promise.all(S.c.map((c, i) => move(c, (i - 4.5) * u, null, null, 700)));
+          await Promise.all(S.c.map(c => recolor(c, C.ten)));
+          setLbl(S.tag, '1 ten', 'big blue');
+        } },
+      { say: 'Ten tens join together into <b>ONE HUNDRED</b> — a flat.', eq: '10 tens = 100 ones = <span class="a">1 hundred</span>',
+        run: async S => {
+          cam(0, 7, 8, 0, 0, 0);
+          S.flat = [...S.c];
+          move(S.tag, 0, 1.6, -3.2, 600);
+          const newC = [];
+          for (let j = 1; j < 10; j++) for (let i = 0; i < 10; i++) { const c = S.add(at(cube(C.ten, cs), (i - 4.5) * u, cs / 2, (j - 4.5) * u * 1.7)); newC.push(c); S.flat.push(c); }
+          S.c.forEach(c => move(c, null, null, -4.5 * u * 1.7, 500));
+          await popAll(newC, 3, 350);
+          await wait(250);
+          await Promise.all(S.flat.map((c, k) => move(c, null, null, (Math.floor(k / 10) - 4.5) * u, 700)));
+          await Promise.all(S.flat.map(c => recolor(c, C.hun)));
+          setLbl(S.tag, '1 hundred', 'big blue');
+        } },
+      { say: 'Ten hundreds stack up into <b>ONE THOUSAND</b> — a big cube.', eq: '10 hundreds = <span class="a">1 thousand</span> = 1,000 ones',
+        run: async S => {
+          cam(8, 8.5, 14.5, 0, 2, 0);
+          S.flat.forEach(c => c.visible = false);
+          S.slabs = [S.add(at(gridSlab(10, 10, u, cs, C.hun), 0, cs / 2, 0))];
+          move(S.tag, 0, 5.9, 0, 500);
+          for (let j = 1; j < 10; j++) {
+            const s = S.add(at(gridSlab(10, 10, u, cs, C.hun), 0, 7, 0));
+            S.slabs.push(s);
+            s.visible = false;
+          }
+          for (let j = 1; j < 10; j++) {
+            const s = S.slabs[j]; s.visible = true;
+            await tw(s.position, { y: cs / 2 + j * u }, 330, { ease: easeIn });
+          }
+          await Promise.all(S.slabs.map(s => recolor(s, C.th)));
+          setLbl(S.tag, '1 thousand', 'big blue');
+        } },
+      { say: 'Now build <b>1,234</b>: 1 thousand, 2 hundreds, 3 tens and 4 ones. Each place tells <b>how many</b> of that block.', eq: '1 thousand + 2 hundreds + 3 tens + 4 ones = <span class="a">1,234</span>',
+        run: async S => {
+          cam(-0.5, 11, 18, -0.5, 1.2, 0);
+          fadeLbl(S.tag, 0);
+          S.slabs.forEach(s => move(s, -6.2, null, null, 800));
+          const pieces = [];
+          for (let j = 0; j < 2; j++) pieces.push(S.add(at(gridSlab(10, 10, u, cs, C.hun), -0.4, cs / 2 + j * u, 0)));
+          for (let j = 0; j < 3; j++) pieces.push(S.add(at(gridSlab(1, 10, u, cs, C.ten), 3.3 + j * 0.62, cs / 2, 0)));
+          for (let j = 0; j < 4; j++) pieces.push(S.add(at(cube(C.one, cs), 5.6 + (j % 2) * 0.6, cs / 2, -0.3 + Math.floor(j / 2) * 0.6)));
+          await popAll(pieces, 140, 450);
+          const labs = [['Thousands: 1', -6.2], ['Hundreds: 2', -0.4], ['Tens: 3', 3.9], ['Ones: 4', 5.9]];
+          const ls = labs.map(([t, x]) => S.add(at(lbl(t, 'blue'), x, 0.2, 3.6)));
+          await popAll(ls, 150);
+        } },
+      { say: 'Each place is <b>10 times</b> the place on its right, so the towers keep growing. In the <b>Indian system</b> we group the places as Ones (3 places), then Thousands, Lakhs and Crores (2 places each). Commas go between the groups.',
+        eq: '98,76,54,321<span class="s">ninety-eight crore seventy-six lakh fifty-four thousand three hundred twenty-one</span>',
+        run: async S => {
+          await hideAll(S);
+          cam(0, 7.5, 17, 0, 2.4, 0);
+          const digits = '987654321'.split('').reverse().map(Number);
+          const namesIN = ['O', 'T', 'H', 'Th', 'TTh', 'L', 'TL', 'C', 'TC'];
+          const colIN = [C.one, C.one, C.one, C.ten, C.ten, C.hun, C.hun, C.th, C.th];
+          S.tw = []; S.twName = [];
+          for (let i = 0; i < 9; i++) {
+            const h = 0.6 + i * 0.5;
+            const m = S.add(at(blk(1.1, h, 1.1, colIN[i], 0.1), 0, h / 2, 0));
+            const dl = lbl(String(digits[i]), 'big'); dl.position.set(0, h / 2 + 0.55, 0); m.add(dl);
+            const nl = lbl(namesIN[i], 'sm'); nl.position.set(0, -h / 2 + 0.05, 0.95); m.add(nl);
+            m.userData.h = h; S.tw.push(m); S.twName.push(nl);
+          }
+          const pos = groupedX([3, 2, 2, 2]);
+          S.tw.forEach((m, i) => m.position.x = pos[i]);
+          await popAll(S.tw.slice().reverse(), 90, 450);
+          S.perIN = [['Ones', [0, 2]], ['Thousands', [3, 4]], ['Lakhs', [5, 6]], ['Crores', [7, 8]]].map(([t, [a, b]]) => S.add(at(lbl(t, 'blue'), (pos[a] + pos[b]) / 2, 0.1, 2.3)));
+          await popAll(S.perIN, 150);
+        } },
+      { say: 'The <b>International system</b> groups the places in <b>threes</b>: Ones, Thousands, Millions. Same number — different commas and names.',
+        eq: '987,654,321<span class="s">nine hundred eighty-seven million six hundred fifty-four thousand three hundred twenty-one</span>',
+        run: async S => {
+          S.perIN.forEach(l => { fadeLbl(l, 0); l.visible = false; });
+          const namesINT = ['O', 'T', 'H', 'Th', 'TTh', 'HTh', 'M', 'TM', 'HM'];
+          const colINT = [C.one, C.one, C.one, C.ten, C.ten, C.ten, C.purple, C.purple, C.purple];
+          const pos = groupedX([3, 3, 3]);
+          await Promise.all(S.tw.map((m, i) => { setLbl(S.twName[i], namesINT[i], 'sm'); return Promise.all([move(m, pos[i], null, null, 800), recolor(m, colINT[i], 800)]); }));
+          const per = [['Ones', [0, 2]], ['Thousands', [3, 5]], ['Millions', [6, 8]]].map(([t, [a, b]]) => S.add(at(lbl(t, 'blue'), (pos[a] + pos[b]) / 2, 0.1, 2.3)));
+          await popAll(per, 150);
+        } }
+    ]
+  });
+  function groupedX(groups) {
+    const xs = []; let x = 0;
+    groups.forEach((g, gi) => { for (let k = 0; k < g; k++) { xs.push(x); x -= 1.35; } x -= 0.9; });
+    const mid = (xs[0] + xs[xs.length - 1]) / 2;
+    return xs.map(v => v - mid);
+  }
+}
+
+/* ================================================================
+   2. ROUNDING
+   ================================================================ */
+{
+  const X = v => -6 + (v - 4700) / 100 * 12;
+  const hy = x => Math.abs(x) <= 6 ? 1.6 * Math.cos(Math.PI * x / 12) ** 2 : 0;
+  const surf = x => hy(x) + 0.15;
+  const R = 0.38;
+  function hill() {
+    const s = new THREE.Shape(); s.moveTo(-7, 0);
+    for (let x = -7; x <= 7.001; x += 0.1) s.lineTo(x, surf(x));
+    s.lineTo(7, 0); s.lineTo(-7, 0);
+    const g = new THREE.ExtrudeGeometry(s, { depth: 2.4, bevelEnabled: false });
+    g.translate(0, 0, -1.2);
+    return shadowy(new THREE.Mesh(g, mat('#cfe7d4')));
+  }
+  function ballAt(S, v, color, text) {
+    const b = S.add(ball(R, color)); const x = X(v); b.position.set(x, surf(x) + R, 0);
+    const l = lbl(text, 'blue'); l.position.set(0, 0.8, 0); b.add(l); b.userData.l = l;
+    return b;
+  }
+  function roll(b, x1, ms = 1300) {
+    const x0 = b.position.x;
+    return tw({ t: 0 }, { t: 1 }, ms, { ease: easeIn, update: e => { const x = x0 + (x1 - x0) * e; b.position.set(x, surf(x) + R, 0); b.rotation.z = -(x - x0) / R; } });
+  }
+  lesson({
+    id: 'round', group: 'Numbers', title: 'Rounding: roll to the nearest', cam: [0, 5, 13, 0, 1.1, 0],
+    steps: [
+      { say: 'Round <b>4,782</b> to the nearest hundred. It lies between <b>4,700</b> and <b>4,800</b>.', eq: '4,700 &lt; 4,782 &lt; 4,800',
+        run: async S => {
+          const h = S.add(hill());
+          const ticks = [];
+          for (let v = 4700; v <= 4800; v += 10) ticks.push(S.add(at(blk(0.07, 0.12, 0.35, C.dark, 0.02), X(v), surf(X(v)) + 0.02, 1.15)));
+          S.e1 = S.add(at(lbl('4,700', 'big'), -6, 0.2, 2.2));
+          S.e2 = S.add(at(lbl('4,800', 'big'), 6, 0.2, 2.2));
+          await pop(h, 600);
+          popAll(ticks, 30, 300);
+          S.b1 = ballAt(S, 4782, C.blue, '4,782');
+          await pop(S.b1, 500, 300);
+        } },
+      { say: 'The <b>halfway</b> point, 4,750, is the <b>top of the hill</b>.', eq: 'halfway = 4,750',
+        run: async S => {
+          const pole = S.add(at(blk(0.08, 2, 0.08, C.dark, 0.03), 0, surf(0) + 1, -0.95));
+          const flag = S.add(at(blk(0.8, 0.45, 0.05, C.orange, 0.02), 0.42, surf(0) + 1.75, -0.95));
+          S.fl = S.add(at(lbl('4,750 halfway', 'q'), 0, surf(0) + 2.6, -0.95));
+          await popAll([pole, flag, S.fl], 150);
+        } },
+      { say: '4,782 is <b>past the top</b>, so it rolls down to <b>4,800</b>.', eq: '4,782 → <span class="a">4,800</span> (nearest hundred)',
+        run: async S => { await roll(S.b1, 5.9); setLbl(S.e2, '4,800 ✔', 'big ok'); } },
+      { say: '4,730 is <b>before the top</b>, so it rolls back to <b>4,700</b>.', eq: '4,730 → <span class="a">4,700</span>',
+        run: async S => { S.b2 = ballAt(S, 4730, C.orange, '4,730'); await pop(S.b2, 500); await wait(300); await roll(S.b2, -5.9); setLbl(S.e1, '4,700 ✔', 'big ok'); } },
+      { say: 'What if the number is <b>exactly</b> on the top, like 4,750? The rule is: halfway rounds <b>UP</b>.', eq: '4,750 → <span class="a">4,800</span>',
+        run: async S => {
+          S.b3 = ballAt(S, 4750, C.green, '4,750');
+          await pop(S.b3, 500); await wait(400);
+          await roll(S.b3, 5.1, 1200);
+        } },
+      { say: 'Quick rule: look at the digit <b>just after</b> the rounding place. <b>0 to 4</b> → stay (round down). <b>5 to 9</b> → go up.', eq: '47<span class="h">8</span>2 → 8 is 5 or more → <span class="a">4,800</span><span class="s">So Aarav\'s answer, 4,700, was wrong.</span>',
+        run: async S => { await bounce(S.b1, 0.5); } }
+    ]
+  });
+}
+
+/* ================================================================
+   3. ADDITION WITH CARRYING
+   ================================================================ */
+lesson({
+  id: 'add', group: 'The four operations', title: 'Addition with carrying (47 + 38)', cam: [-2.3, 16.5, 16, -2.3, 0, -0.6],
+  setup: S => placeMats(S),
+  steps: [
+    { say: 'Let us add <b>47 + 38</b>. First build 47: <b>4 tens</b> (rods) and <b>7 ones</b> (cubes).', eq: '47 = 4 tens + 7 ones',
+      run: async S => {
+        S.rods = []; S.ones = [];
+        for (let i = 0; i < 4; i++) S.rods.push(makeRod(S, i, C.ten));
+        for (let i = 0; i < 7; i++) S.ones.push(S.add(at(cube(C.one), ...oneP(i))));
+        counts(S, '4 tens', '7 ones');
+        await popAll([...S.rods.flat(), ...S.ones], 8);
+      } },
+    { say: 'Now build <b>38</b> in lighter colours: <b>3 tens</b> and <b>8 ones</b>.', eq: '38 = 3 tens + 8 ones',
+      run: async S => {
+        const nw = [];
+        for (let i = 4; i < 7; i++) { const r = makeRod(S, i, C.ten2); S.rods.push(r); nw.push(...r); }
+        for (let i = 0; i < 8; i++) { const c = S.add(at(cube(C.one2), ...oneP(i + 15))); S.ones.push(c); nw.push(c); }
+        counts(S, '4 + 3 tens', '7 + 8 ones');
+        await popAll(nw, 8);
+      } },
+    { say: 'Always start with the <b>ONES</b>. Push them together: 7 + 8 = <b>15 ones</b>.', eq: 'Ones: 7 + 8 = 15',
+      run: async S => { await Promise.all(S.ones.map((c, i) => { const p = oneP(i); return move(c, p[0], p[1], p[2], 700, i * 15); })); counts(S, null, '15 ones'); } },
+    { say: '15 is too big for the ones place (only 0–9 fit). So <b>10 ones bundle into 1 ten</b>.', eq: '15 ones = <span class="h">1 ten</span> + 5 ones',
+      run: async S => {
+        const bundle = S.ones.slice(0, 10), rest = S.ones.slice(10);
+        await Promise.all(bundle.map((c, k) => arc(c, 6.7, 0.58, rodZ(k), 1.2, 700, k * 55)));
+        await Promise.all(rest.map((c, i) => { const p = oneP(i); return move(c, p[0], p[1], p[2], 500); }));
+        S.carry = bundle; S.ones = rest;
+        counts(S, null, '5 ones');
+      } },
+    { say: '<b>Carry</b> the new ten over to the TENS side. That is the small <span class="h">1</span> we write above the tens column.', eq: 'Carry 1 ten · write 5 in the ones place',
+      run: async S => {
+        await Promise.all(S.carry.map((c, k) => arc(c, rodX(7), 0.58, rodZ(k), 3, 1000, k * 40)));
+        S.rods.push(S.carry);
+        counts(S, '4 + 3 + 1 tens', null);
+      } },
+    { say: 'Now add the tens: 4 + 3 + 1 (carried) = <b>8 tens</b>.', eq: 'Tens: 4 + 3 + 1 = 8',
+      run: async S => { await Promise.all(S.rods.map((r, j) => Promise.all(r.map(c => bounce(c, 0.8, 420, j * 180))))); counts(S, '8 tens', null); } },
+    { say: '8 tens and 5 ones make <b>85</b>. The blocks show exactly what the column method does.',
+      eq: '<table><tr><td></td><td class="c">1</td><td class="c"></td></tr><tr><td></td><td>4</td><td>7</td></tr><tr><td>+</td><td>3</td><td>8</td></tr><tr class="ln"><td></td><td class="a">8</td><td class="a">5</td></tr></table>',
+      run: async S => { counts(S, '8 tens', '5 ones', 'ok'); await wait(100); } }
+  ]
+});
+
+/* ================================================================
+   4. SUBTRACTION WITH BORROWING
+   ================================================================ */
+lesson({
+  id: 'sub', group: 'The four operations', title: 'Subtraction with borrowing (52 − 27)', cam: [-2.3, 16.5, 16, -2.3, 0, -0.6],
+  setup: S => placeMats(S),
+  steps: [
+    { say: 'Start with <b>52</b>: 5 tens and 2 ones. We must take away <b>27</b> (2 tens and 7 ones).', eq: '52 − 27 = ?',
+      run: async S => {
+        S.rods = []; S.ones = [];
+        for (let i = 0; i < 5; i++) S.rods.push(makeRod(S, i, C.ten));
+        for (let i = 0; i < 2; i++) S.ones.push(S.add(at(cube(C.one), ...oneP(i))));
+        counts(S, '5 tens', '2 ones');
+        await popAll([...S.rods.flat(), ...S.ones], 8);
+      } },
+    { say: 'Start with the ones: take away <b>7 ones</b>… but there are only <b>2</b>. Not enough!', eq: 'Ones: 2 − 7 <span class="h">✗ not enough</span>',
+      run: async S => {
+        counts(S, null, 'only 2 ones', 'bad');
+        for (let k = 0; k < 3; k++) { await Promise.all(S.ones.map(c => move(c, c.position.x + 0.2, null, null, 90))); await Promise.all(S.ones.map(c => move(c, c.position.x - 0.2, null, null, 90))); }
+      } },
+    { say: '<b>Borrow</b>: open one ten and break it into <b>10 ones</b>. Now we have 4 tens and 12 ones — still the same 52!', eq: '5 tens 2 ones = <span class="h">4 tens 12 ones</span>',
+      run: async S => {
+        const rod = S.rods.pop();
+        await Promise.all(rod.map((c, k) => { const p = oneP(2 + k); return arc(c, p[0], p[1], p[2], 3, 1000, k * 60); }));
+        S.ones.push(...rod);
+        counts(S, '4 tens', '12 ones', 'blue');
+      } },
+    { say: 'Take away 7 ones: 12 − 7 = <b>5 ones</b> left.', eq: '12 − 7 = 5',
+      run: async S => { const gone = S.ones.slice(5); S.ones = S.ones.slice(0, 5); await Promise.all(gone.map((c, i) => liftAway(c, i * 90))); counts(S, null, '5 ones'); } },
+    { say: 'Take away 2 tens: 4 − 2 = <b>2 tens</b> left.', eq: '4 − 2 = 2',
+      run: async S => { const gone = S.rods.splice(2, 2); await Promise.all(gone.map((r, j) => Promise.all(r.map(c => liftAway(c, j * 250))))); counts(S, '2 tens', null); } },
+    { say: 'What is left: 2 tens and 5 ones = <b>25</b>. Check by adding back: 25 + 27 = 52 ✔',
+      eq: '<table><tr><td></td><td class="c">4</td><td class="c">1</td></tr><tr><td></td><td><s>5</s></td><td>2</td></tr><tr><td>−</td><td>2</td><td>7</td></tr><tr class="ln"><td></td><td class="a">2</td><td class="a">5</td></tr></table>',
+      run: async S => { counts(S, '2 tens', '5 ones', 'ok'); await Promise.all([...S.rods.flat(), ...S.ones].map((c, i) => bounce(c, 0.5, 400, i * 8))); } }
+  ]
+});
+
+/* ================================================================
+   5. MULTIPLICATION = EQUAL GROUPS
+   ================================================================ */
+lesson({
+  id: 'mul', group: 'The four operations', title: 'Multiplication = equal groups', cam: [0, 10, 12, 0, 0, 0],
+  steps: [
+    { say: 'Here are <b>3 plates</b>.', eq: '3 groups',
+      run: async S => { S.pl = [-4.6, 0, 4.6].map(x => S.add(at(disc(1.7, 0.18, C.plate), x, 0.09, 0))); await popAll(S.pl, 150, 500); } },
+    { say: 'Put <b>4 laddoos</b> on every plate. Count: 4, 8, 12.', eq: '4 + 4 + 4 = 12',
+      run: async S => {
+        S.bl = [];
+        const off = [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]];
+        for (let p = 0; p < 3; p++) {
+          const grp = [];
+          for (let k = 0; k < 4; k++) { const b = S.add(at(ball(0.42, C.orange), S.pl[p].position.x + off[k][0], 5, off[k][1])); grp.push(b); S.bl.push(b); b.visible = false; }
+          await Promise.all(grp.map((b, k) => { b.visible = true; return tw(b.position, { y: 0.62 }, 420, { delay: k * 90, ease: easeIn }); }));
+          await wait(200);
+        }
+      } },
+    { say: 'Every group has the <b>same</b> number. Adding the same number again and again is <b>multiplying</b>.', eq: '3 groups × 4 each = <span class="a">12</span>',
+      run: async S => { const ls = S.pl.map(p => S.add(at(lbl('4', 'big blue'), p.position.x, 1.6, 0))); S.pll = ls; await popAll(ls, 200); } },
+    { say: 'Now arrange the laddoos in rows: <b>3 rows of 4</b>. This is called an <b>array</b>.', eq: '3 rows × 4 = 12',
+      run: async S => {
+        S.pll.forEach(l => { fadeLbl(l, 0); l.visible = false; });
+        await Promise.all(S.pl.map(p => vanish(p, 400)));
+        S.G = new THREE.Group(); S.add(S.G);
+        S.bl.forEach(b => S.G.attach(b));
+        await Promise.all(S.bl.map((b, i) => move(b, (i % 4 - 1.5) * 1.25, 0.42, (Math.floor(i / 4) - 1) * 1.25, 800, i * 30)));
+        S.rl = lbl('3 rows', 'blue'); S.rl.position.set(-3.3, 0.5, 0); S.G.add(S.rl);
+        S.cl = lbl('4 in each row', 'blue'); S.cl.position.set(0, 0.5, -2.6); S.G.add(S.cl);
+      } },
+    { say: 'Turn the array around: now it is <b>4 rows of 3</b> — still 12! The order of multiplying does not change the answer.', eq: '3 × 4 = 4 × 3 = <span class="a">12</span>',
+      run: async S => { await tw(S.G.rotation, { y: Math.PI / 2 }, 1400); setLbl(S.rl, '4 rows', 'blue'); setLbl(S.cl, '3 in each row', 'blue'); } },
+    { say: 'Word problems with "<b>each</b>", "<b>per</b>" or "<b>at the rate of</b>" and a <b>total</b> to find are equal groups → multiply. Example: 25,670 bottles at ₹78 each.', eq: 'number of groups × amount in each group = <span class="a">TOTAL</span>',
+      run: async S => { await Promise.all(S.bl.map((b, i) => bounce(b, 0.7, 420, i * 50))); } }
+  ]
+});
+
+/* ================================================================
+   6. BIG MULTIPLICATION – AREA MODEL
+   ================================================================ */
+{
+  const k = 0.45, X = 23 * k, Z = 14 * k, x0 = -X / 2, z0 = -Z / 2, h = 0.3, g = 0.7;
+  const parts = [
+    { nx: 20, nz: 10, cx: x0, cz: z0, dx: 0, dz: 0, col: C.hun, t: '20 × 10 = 200' },
+    { nx: 3, nz: 10, cx: x0 + 20 * k, cz: z0, dx: g, dz: 0, col: C.ten, t: '3 × 10 = 30' },
+    { nx: 20, nz: 4, cx: x0, cz: z0 + 10 * k, dx: 0, dz: g, col: C.one, t: '20 × 4 = 80' },
+    { nx: 3, nz: 4, cx: x0 + 20 * k, cz: z0 + 10 * k, dx: g, dz: g, col: C.th, t: '3 × 4 = 12' }
+  ];
+  lesson({
+    id: 'area', group: 'The four operations', title: 'Big multiplication: break it up (23 × 14)', cam: [0, 13, 11, 0.3, 0, 0.6],
+    steps: [
+      { say: '<b>23 × 14</b> means 14 rows of 23 squares — a rectangle. Counting 322 squares one by one is slow. Let us break it up!', eq: '23 × 14 = ?',
+        run: async S => {
+          S.sl = parts.map(p => S.add(at(gridSlab(p.nx, p.nz, k, h, C.grey), p.cx + p.nx * k / 2, h / 2, p.cz + p.nz * k / 2)));
+          S.d1 = S.add(at(lbl('23', 'big'), 0, 0.2, Z / 2 + 0.9)); S.d2 = S.add(at(lbl('14', 'big'), x0 - 1.1, 0.2, 0));
+          await popAll(S.sl, 60, 600); await popAll([S.d1, S.d2], 150);
+        } },
+      { say: 'Split 23 into <b>20 + 3</b> and 14 into <b>10 + 4</b>. The rectangle breaks into 4 easy pieces.', eq: '23 = 20 + 3 &nbsp;·&nbsp; 14 = 10 + 4',
+        run: async S => {
+          [S.d1, S.d2].forEach(l => { fadeLbl(l, 0); l.visible = false; });
+          await Promise.all(S.sl.map((s, i) => Promise.all([move(s, s.position.x + parts[i].dx, null, s.position.z + parts[i].dz, 800), recolor(s, parts[i].col, 800)])));
+          const e = [['20', x0 + 10 * k, Z / 2 + g + 0.9], ['3', x0 + 21.5 * k + g, Z / 2 + g + 0.9]].map(([t, x, z]) => S.add(at(lbl(t, 'big'), x, 0.2, z)));
+          const f = [['10', z0 + 5 * k], ['4', z0 + 12 * k + g]].map(([t, z]) => S.add(at(lbl(t, 'big'), x0 - 1.1, 0.2, z)));
+          await popAll([...e, ...f], 120);
+        } },
+      { say: 'Each piece is easy to work out in your head.', eq: '200 &nbsp; 30 &nbsp; 80 &nbsp; 12',
+        run: async S => {
+          S.pl = S.sl.map((s, i) => S.add(at(lbl(parts[i].t, 'blue'), s.position.x, 0.75, s.position.z)));
+          for (const l of S.pl) { await pop(l, 400); await wait(350); }
+        } },
+      { say: 'Add the four pieces: 200 + 30 + 80 + 12 = <b>322</b>.', eq: '200 + 30 + 80 + 12 = <span class="a">322</span>',
+        run: async S => { await Promise.all(S.sl.map((s, i) => bounce(s, 0.6, 450, i * 150))); } },
+      { say: 'This is exactly the column method! Bottom row: 23 × 4 = 80 + 12 = <b>92</b>. Top row: 23 × 10 = 200 + 30 = <b>230</b> — that is why we write a <span class="h">0</span> first in the second line.',
+        eq: '<table><tr><td></td><td></td><td>2</td><td>3</td><td></td></tr><tr><td>×</td><td></td><td>1</td><td>4</td><td></td></tr><tr class="ln"><td></td><td></td><td>9</td><td>2</td><td class="note">← 23 × 4</td></tr><tr><td>+</td><td>2</td><td>3</td><td class="h">0</td><td class="note">← 23 × 10</td></tr><tr class="ln"><td></td><td class="a">3</td><td class="a">2</td><td class="a">2</td><td></td></tr></table>',
+        run: async S => {
+          cam(2.5, 14, 13.5, 1.8, 0, -1.4);
+          await Promise.all([2, 3].map(i => move(S.sl[i], null, 0.9, null, 600)));
+          S.r1 = S.add(at(lbl('23 × 4 = 92', 'ok'), X / 2 + g + 2.2, 1, z0 + 12 * k + g)); await pop(S.r1);
+          await wait(900);
+          await Promise.all([2, 3].map(i => move(S.sl[i], null, h / 2, null, 500)));
+          await Promise.all([0, 1].map(i => move(S.sl[i], null, 0.9, null, 600)));
+          S.r2 = S.add(at(lbl('23 × 10 = 230', 'ok'), X / 2 + g + 2.2, 1, z0 + 5 * k)); await pop(S.r2);
+          await wait(700);
+          await Promise.all([0, 1].map(i => move(S.sl[i], null, h / 2, null, 500)));
+        } }
+    ]
+  });
+}
+
+/* ================================================================
+   7. DIVISION – SHARING, REMAINDER
+   ================================================================ */
+{
+  const PX = [-5.4, -1.8, 1.8, 5.4], slot = [[-0.5, -0.35], [0.5, -0.35], [0, 0.5]];
+  lesson({
+    id: 'div', group: 'The four operations', title: 'Division = sharing equally', cam: [0, 11, 12.5, 0, 0, 0],
+    steps: [
+      { say: 'We have <b>14 laddoos</b> to share <b>equally</b> among <b>4 plates</b>.', eq: '14 ÷ 4 = ?',
+        run: async S => {
+          S.pl = PX.map(x => S.add(at(disc(1.45, 0.18, C.plate), x, 0.09, 2)));
+          S.b = []; for (let i = 0; i < 14; i++) S.b.push(S.add(at(ball(0.38, C.orange), -6.5 + i, 0.38, -2.8)));
+          await popAll(S.pl, 120, 450); await popAll(S.b, 50);
+        } },
+      { say: 'Share like a card game: give <b>one to each plate</b>, round after round. Round 1…', eq: 'Round 1: 4 given · 10 left',
+        run: async S => { await Promise.all(PX.map((x, p) => arc(S.b[p], x + slot[0][0], 0.56, 2 + slot[0][1], 2, 750, p * 260))); } },
+      { say: 'Round 2 and round 3. Every plate gets the same number.', eq: 'Round 2: 8 given · Round 3: 12 given · 2 left',
+        run: async S => {
+          for (let r = 1; r < 3; r++) { await Promise.all(PX.map((x, p) => arc(S.b[r * 4 + p], x + slot[r][0], 0.56, 2 + slot[r][1], 2, 750, p * 240))); await wait(200); }
+        } },
+      { say: 'Only 2 laddoos are left — not enough to give every plate one more. These 2 are the <span class="h">REMAINDER</span>.', eq: '14 ÷ 4 = <span class="a">3</span> remainder <span class="h">2</span>',
+        run: async S => {
+          await Promise.all([12, 13].map(i => recolor(S.b[i], C.red)));
+          const l = S.add(at(lbl('remainder 2', 'bad'), 6, 1.4, -2.8)); await pop(l);
+          const q = PX.map(x => S.add(at(lbl('3', 'big blue'), x, 1.7, 2))); await popAll(q, 120);
+        } },
+      { say: 'Check: 4 plates × 3 each = 12, plus 2 left = 14 ✔. The remainder is always <b>smaller</b> than the divisor.', eq: 'Divisor × Quotient + Remainder = Dividend<span class="s">4 × 3 + 2 = 14</span>',
+        run: async S => { await Promise.all(S.b.slice(0, 12).map((b, i) => bounce(b, 0.7, 420, (i % 4) * 150))); } },
+      { say: 'Division also answers "<b>how many groups?</b>" — 14 laddoos in boxes of 4 → 3 full boxes, 2 left over. Read the question to decide what the remainder means.', eq: 'Share equally → find EACH &nbsp;·&nbsp; Make groups → find HOW MANY',
+        run: async S => { await Promise.all(S.pl.map((p, i) => bounce(p, 0.4, 400, i * 120))); } }
+    ]
+  });
+}
+
+/* ================================================================
+   8. WORD PROBLEMS – WHOLE AND PARTS (+ and −)
+   ================================================================ */
+{
+  const k = 12 / 625, A = 350 * k, B = 275 * k, x0 = -6;
+  lesson({
+    id: 'wp-parts', group: 'Word problems', title: 'Whole and parts: + or −?', cam: [0, 8, 13, 0, 0.8, 0.3],
+    steps: [
+      { say: 'Every adding or subtracting story has a <b>WHOLE</b> (the total, the big amount)…', eq: 'WHOLE',
+        run: async S => { S.w = S.add(at(bar(12, C.grey, 'WHOLE (the total)', 'big'), x0, 0, 0)); await grow(S.w, 900); } },
+      { say: '…and the whole is made of <b>PARTS</b>. Here it has two parts.', eq: 'Part + Part = Whole',
+        run: async S => {
+          S.w.visible = false;
+          S.a = S.add(at(bar(A, C.blue, 'part'), x0, 0, 0)); S.b = S.add(at(bar(B, C.orange, 'part'), x0 + A, 0, 0));
+          await Promise.all([move(S.a, x0 - 0.35, null, null, 700), move(S.b, x0 + A + 0.35, null, null, 700)]);
+        } },
+      { say: 'If we know <b>both parts</b> and want the <b>whole</b> → <span class="h">ADD</span>. Meena has ₹350 and her brother has ₹275. How much <b>together</b>?', eq: '350 + 275 = <span class="a">625</span> &nbsp;(ADD)',
+        run: async S => {
+          setLbl(S.a.userData.l, 'Meena ₹350'); setLbl(S.b.userData.l, 'Brother ₹275');
+          await Promise.all([move(S.a, x0, null, null, 600), move(S.b, x0 + A, null, null, 600)]);
+          S.br = S.add(at(brace(12, '? together', 'q'), x0, 2.2, 0)); await pop(S.br, 500);
+          await wait(1100); setLbl(S.br.userData.l, '₹625 together', 'ok');
+        } },
+      { say: 'If we know the <b>whole</b> and <b>one part</b>, the other part is missing → <span class="h">SUBTRACT</span>. Together they have ₹625; Meena has ₹350. How much does her brother have?', eq: '625 − 350 = <span class="a">275</span> &nbsp;(SUBTRACT)',
+        run: async S => {
+          setLbl(S.br.userData.l, 'whole ₹625', 'blue');
+          setLbl(S.b.userData.l, '?', 'q'); await ghost(S.b, true);
+          await wait(1200);
+          await ghost(S.b, false); setLbl(S.b.userData.l, 'Brother ₹275', 'ok');
+        } },
+      { say: '<b>Comparing</b> ("how much more?", "how many fewer?", "difference"): put the bars one below the other. The extra piece is the answer → <span class="h">SUBTRACT</span>.', eq: '350 − 275 = <span class="a">75</span> more &nbsp;(SUBTRACT)',
+        run: async S => {
+          await vanish(S.br, 300);
+          setLbl(S.a.userData.l, 'Meena ₹350', ''); setLbl(S.b.userData.l, 'Brother ₹275', '');
+          cam(0, 11, 12.5, 0, 0.5, 0);
+          await Promise.all([move(S.a, x0, null, -1.7, 700), move(S.b, x0, null, 1.7, 700)]);
+          S.d = S.add(at(bar(A - B, C.ghost, '? more', 'q'), x0 + B, 0, 1.7)); ghost(S.d, true, 0);
+          await grow(S.d, 600);
+          await wait(1100); setLbl(S.d.userData.l, '₹75 more', 'ok'); await ghost(S.d, false);
+        } },
+      { say: 'Remember: <b>ADD</b> when you find the <b>whole</b>. <b>SUBTRACT</b> when you find a <b>part</b> (what is left, the other part, or the difference).', eq: 'WHOLE → <span class="a">+</span> &nbsp;&nbsp;·&nbsp;&nbsp; PART → <span class="a">−</span>',
+        run: async S => { await Promise.all([S.a, S.b, S.d].map((o, i) => bounce(o, 0.5, 420, i * 150))); } }
+    ]
+  });
+}
+
+/* ================================================================
+   9. WORD PROBLEMS – EQUAL PARTS (× and ÷)
+   ================================================================ */
+{
+  const w = 1.8, x0 = -5.4;
+  lesson({
+    id: 'wp-equal', group: 'Word problems', title: 'Equal parts: × or ÷?', cam: [0, 8, 13, 0, 0.8, 0.3],
+    steps: [
+      { say: 'Now all the parts are <b>EQUAL</b>: 6 notebooks, and each costs ₹45.', eq: '₹45 · ₹45 · ₹45 · ₹45 · ₹45 · ₹45',
+        run: async S => { S.bl = []; for (let i = 0; i < 6; i++) S.bl.push(S.add(at(bar(w - 0.1, C.purple, '₹45'), x0 + i * w, 0, 0))); await popAll(S.bl, 160, 450); } },
+      { say: 'We know <b>how many</b> parts and the size of <b>each</b> part. We want the <b>TOTAL</b> → <span class="h">MULTIPLY</span>.', eq: '6 × 45 = <span class="a">270</span> &nbsp;(MULTIPLY)',
+        run: async S => { S.br = S.add(at(brace(6 * w - 0.1, '? total', 'q'), x0, 2.2, 0)); await pop(S.br, 500); await wait(1100); setLbl(S.br.userData.l, '₹270 total', 'ok'); } },
+      { say: 'We know the <b>TOTAL</b> and <b>how many</b> equal parts. We want <b>EACH</b> part → share it → <span class="h">DIVIDE</span>.', eq: '270 ÷ 6 = <span class="a">45</span> each &nbsp;(DIVIDE)',
+        run: async S => {
+          setLbl(S.br.userData.l, '₹270 for 6 notebooks', 'blue');
+          await Promise.all(S.bl.map(b => { setLbl(b.userData.l, '?', 'q'); return ghost(b, true); }));
+          await wait(1000);
+          for (const b of S.bl) { ghost(b, false, 300); setLbl(b.userData.l, '₹45', 'ok'); await wait(160); }
+        } },
+      { say: 'We know the <b>TOTAL</b> and the size of <b>each</b> part. We want <b>HOW MANY</b> parts → make groups → <span class="h">DIVIDE</span>.', eq: '270 ÷ 45 = <span class="a">6</span> notebooks &nbsp;(DIVIDE)',
+        run: async S => {
+          setLbl(S.br.userData.l, '₹270 in all', 'blue');
+          await Promise.all(S.bl.map((b, i) => vanish(b, 250, i * 40)));
+          S.bl.forEach((b, i) => setLbl(b.userData.l, `₹45 (${i + 1})`, ''));
+          for (const b of S.bl) { await pop(b, 380); await wait(120); }
+          setLbl(S.br.userData.l, '₹270 = 6 groups of ₹45', 'ok');
+        } },
+      { say: 'Remember: with equal parts, <b>×</b> finds the <b>total</b>, and <b>÷</b> finds <b>each part</b> or <b>how many parts</b>.', eq: 'EQUAL parts: &nbsp;find TOTAL → × &nbsp;·&nbsp; find EACH or HOW MANY → ÷',
+        run: async S => { await Promise.all(S.bl.map((b, i) => bounce(b, 0.5, 400, i * 90))); } }
+    ]
+  });
+}
+
+/* ================================================================
+   10. THE 2-QUESTION TRICK
+   ================================================================ */
+{
+  const CELL = { add: [-3, -2.4], sub: [3, -2.4], mul: [-3, 2.4], div: [3, 2.4] };
+  const PED = { add: '#dbe7fb', sub: '#fde2cc', mul: '#d8f0dd', div: '#e9e0f9' };
+  const SYM = { add: '+', sub: '−', mul: '×', div: '÷' };
+  const NAME = { add: 'ADD', sub: 'SUBTRACT', mul: 'MULTIPLY', div: 'DIVIDE' };
+  const PROBS = [
+    ['An oil well produced 25,64,725 L, 4,12,50,465 L and 81,27,455 L in three years. Find the total oil.', 'add', '① The <b>TOTAL</b> of three years. ② The amounts are <b>DIFFERENT</b>.'],
+    ['A rice mill sold 4,25,270 kg in 2019 and 5,10,245 kg in 2020. How much more in 2020?', 'sub', '① "How much more" is the <b>difference</b> — a PART. ② Different amounts.'],
+    ['A dealer sold 25,670 shampoo bottles at ₹78 each. How much did he earn?', 'mul', '① The <b>TOTAL</b> money. ② Every bottle costs the <b>same</b> → EQUAL groups.'],
+    ['A pen costs ₹25. How many pens can be bought with ₹11,900?', 'div', '① The total is known; we want <b>how many groups</b> of ₹25 — a PART. ② EQUAL groups.'],
+    ['58,815 balls are filled equally in 24 boxes. How many in each box?', 'div', '① We want <b>each</b> box — a PART. ② "Equally" → EQUAL groups.'],
+    ['The sum of two numbers is 2,10,452. One number is 65,790. Find the other number.', 'sub', '⚠ Trap word "sum"! The sum is the whole; we want the <b>other part</b>. ② Different parts.'],
+    ['The product of two numbers is 675. One number is 25. Find the other number.', 'div', '⚠ Trap word "product"! The product is the total; we want a <b>part</b>. ② EQUAL groups (25 groups).'],
+    ['The difference between two numbers is 2,34,500. The smaller number is 2,65,500. Find the greater number.', 'add', '⚠ Trap word "difference"! The greater number is the long bar = <b>smaller + difference</b> → the WHOLE. ② Different parts.']
+  ];
+  function token() {
+    const g = new THREE.Group();
+    const cone = shadowy(new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.9, 32), mat(C.red)));
+    cone.rotation.x = Math.PI; cone.position.y = 0.45; g.add(cone);
+    const top = ball(0.36, C.red); top.position.y = 1.1; g.add(top);
+    return g;
+  }
+  lesson({
+    id: 'wp-trick', group: 'Word problems', title: 'The 2-question trick', cam: [-0.8, 13, 14, -0.8, 0, -0.2],
+    steps: [
+      { say: 'Choose the operation with <b>two questions</b>. ① Am I finding the <b>TOTAL</b> or a <b>PART</b>? ② Are the parts <b>EQUAL</b> or <b>DIFFERENT</b>? The answers point to one box.', eq: '① TOTAL or PART? &nbsp;&nbsp; ② EQUAL or DIFFERENT?',
+        run: async S => {
+          S.ped = {};
+          const items = [];
+          for (const k in CELL) {
+            const [x, z] = CELL[k];
+            const p = S.add(at(blk(5.2, 0.6, 4, PED[k], 0.15), x, 0.3, z)); S.ped[k] = p;
+            const s = lbl(SYM[k], 'huge plain'); s.position.set(0, 0.9, 0); p.add(s);
+            const n = lbl(NAME[k], 'sm plain'); n.position.set(0, 0.35, 1.5); p.add(n);
+            items.push(p);
+          }
+          items.push(S.add(at(lbl('Finding the <b>TOTAL</b>', 'blue'), -3, 0.2, -5.6)));
+          items.push(S.add(at(lbl('Finding a <b>PART</b>', 'blue'), 3, 0.2, -5.6)));
+          items.push(S.add(at(lbl('parts <b>DIFFERENT</b>', 'blue'), -8.4, 0.2, -2.4)));
+          items.push(S.add(at(lbl('parts <b>EQUAL</b>', 'blue'), -8.4, 0.2, 2.4)));
+          S.tok = S.add(at(token(), 0, 0, 6));
+          await popAll(items, 110, 500);
+          await pop(S.tok);
+        } },
+      ...PROBS.map(([q, op, why]) => ({
+        say: `${why} → <span class="h">${NAME[op]} (${SYM[op]})</span>`, eq: P(q),
+        run: async S => {
+          const [x, z] = CELL[op];
+          await wait(700);
+          await arc(S.tok, x + 1.7, 0.6, z - 0.6, 3.2, 1000);
+          await bounce(S.ped[op], 0.35, 380);
+        }
+      })),
+      { say: 'Do not guess from one word. Always ask the two questions — they work for every word problem.', eq: 'TOTAL + DIFFERENT → + &nbsp;·&nbsp; PART + DIFFERENT → − &nbsp;·&nbsp; TOTAL + EQUAL → × &nbsp;·&nbsp; PART + EQUAL → ÷',
+        run: async S => { await arc(S.tok, 0, 0, 6, 2, 900); await Promise.all(Object.values(S.ped).map((p, i) => bounce(p, 0.35, 400, i * 150))); } }
+    ]
+  });
+}
+
+/* ================================================================
+   11. MULTI-STEP: THE HIDDEN QUESTION
+   ================================================================ */
+{
+  const x0 = -6, car = 6.4525, tv = 1.50625, rem = 4.04125;
+  lesson({
+    id: 'wp-multi', group: 'Word problems', title: 'Multi-step: the hidden question', cam: [0, 10, 13.5, 0, 0.5, 0.5],
+    steps: [
+      { say: 'Mr. Basu had <b>₹12,00,000</b>. This is the WHOLE.', eq: P('Mr. Basu had ₹12,00,000. He spent ₹6,45,250 on a car and ₹1,50,625 on a television. How much money is left?'),
+        run: async S => { S.w = S.add(at(bar(12, C.grey, 'had ₹12,00,000', 'big'), x0, 0, -1.7)); await grow(S.w, 900); } },
+      { say: 'He spent <b>₹6,45,250</b> on a car — one part.', eq: 'car = ₹6,45,250',
+        run: async S => { S.c = S.add(at(bar(car - 0.05, C.blue, 'car ₹6,45,250'), x0, 0, 1.3)); await grow(S.c); } },
+      { say: 'And <b>₹1,50,625</b> on a TV — another part. The money <b>left</b> is the unknown part.', eq: 'TV = ₹1,50,625 &nbsp;·&nbsp; left = ?',
+        run: async S => {
+          S.t = S.add(at(bar(tv - 0.05, C.purple, 'TV ₹1,50,625'), x0 + car, 0, 1.3)); await grow(S.t, 500);
+          S.r = S.add(at(bar(rem, C.green, '? left', 'q'), x0 + car + tv, 0, 1.3)); ghost(S.r, true, 0); await grow(S.r, 500);
+        } },
+      { say: 'We cannot find "left" in one go. First answer the <span class="h">hidden question</span>: how much did he spend <b>in all</b>? Both parts are known → ADD.', eq: '6,45,250 + 1,50,625 = <span class="a">7,95,875</span> spent',
+        run: async S => { S.fb = S.add(at(floorBrace(car + tv - 0.05, '? spent', 'q'), x0, 0, 2.6)); await grow(S.fb, 700); await wait(1000); setLbl(S.fb.userData.l, '₹7,95,875 spent', 'ok'); } },
+      { say: 'Now the main question: <b>whole − spent = left</b> → SUBTRACT.', eq: '12,00,000 − 7,95,875 = <span class="a">4,04,125</span> left',
+        run: async S => { await wait(500); await ghost(S.r, false, 700); setLbl(S.r.userData.l, '₹4,04,125 left', 'ok'); } },
+      { say: 'Check: spent + left must make the whole. 7,95,875 + 4,04,125 = 12,00,000 ✔. <b>Answer:</b> ₹4,04,125 is left with Mr. Basu.', eq: 'Step 1: hidden question (+) → Step 2: main question (−)',
+        run: async S => { await Promise.all([S.c, S.t, S.r].map((o, i) => bounce(o, 0.5, 400, i * 150))); await bounce(S.w, 0.5, 420); } }
+    ]
+  });
+}
+
+/* ================================================================
+   12. UNITARY METHOD
+   ================================================================ */
+{
+  const w = 0.9, x0 = -5.4;
+  lesson({
+    id: 'wp-unit', group: 'Word problems', title: 'Unitary method: first find ONE', cam: [0, 9, 13, 0, 0.5, 1],
+    steps: [
+      { say: '<b>12 bags</b> cost <b>₹1,800</b>. What do <b>7 bags</b> cost? Each bag costs the same.', eq: P('The cost of 12 bags is ₹1,800. Find the cost of 7 bags.'),
+        run: async S => {
+          S.bl = []; for (let i = 0; i < 12; i++) S.bl.push(S.add(at(bar(w - 0.08, C.blue, null), x0 + i * w, 0, 0)));
+          await popAll(S.bl, 60, 400);
+          S.br = S.add(at(brace(12 * w - 0.08, '₹1,800 for 12 bags', 'blue'), x0, 2, 0)); await pop(S.br);
+        } },
+      { say: 'Step 1 — find the cost of <b>ONE</b> bag. Share the total into 12 equal parts → DIVIDE.', eq: '1,800 ÷ 12 = <span class="a">150</span> for 1 bag',
+        run: async S => {
+          const b = S.bl[0]; await move(b, null, null, 2.4, 600);
+          const l = lbl('₹150', 'ok'); l.position.set((w - 0.08) / 2, 1.4, 0); b.add(l); await pop(l);
+        } },
+      { say: 'Step 2 — <b>7 bags</b> are 7 equal parts of ₹150 → MULTIPLY.', eq: '150 × 7 = <span class="a">1,050</span>',
+        run: async S => {
+          for (let i = 1; i < 7; i++) await move(S.bl[i], null, null, 2.4, 260);
+          S.fb = S.add(at(floorBrace(7 * w - 0.08, '? 7 bags', 'q'), x0, 0, 3.8)); await grow(S.fb, 600);
+          await wait(900); setLbl(S.fb.userData.l, '₹1,050 for 7 bags', 'ok');
+        } },
+      { say: 'This is the <b>unitary method</b>: from MANY go to ONE (÷), then from ONE go to MANY (×).', eq: '12 bags → 1 bag (÷ 12) → 7 bags (× 7)',
+        run: async S => { await Promise.all(S.bl.slice(0, 7).map((b, i) => bounce(b, 0.5, 380, i * 80))); } }
+    ]
+  });
+}
+
+/* ================================================================
+   13. FACTORS = RECTANGLES
+   ================================================================ */
+{
+  const gp = (i, R, Cc) => [((i % Cc) - (Cc - 1) / 2) * 1.08, 0.46, (Math.floor(i / Cc) - (R - 1) / 2) * 1.08];
+  function arrange(S, list, R, Cc, ms = 800) { return Promise.all(list.map((c, i) => { const p = gp(i, R, Cc); return move(c, p[0], p[1], p[2], ms, i * 20); })); }
+  function dim(S, t, R, cls = 'big blue') { setLbl(S.dim, t, cls); S.dim.position.set(0, 0.2, R / 2 * 1.08 + 1); fadeLbl(S.dim, 1); }
+  lesson({
+    id: 'factors', group: 'Factors & multiples', title: 'Factors = rectangles', cam: [0, 10.5, 10, 0, 0, 0.3],
+    setup: S => { S.dim = S.add(lbl('', 'big blue')); fadeLbl(S.dim, 0); },
+    steps: [
+      { say: 'Here are <b>12 cubes</b>. A <b>factor</b> of 12 is a number that makes a <b>perfect rectangle</b> of rows — nothing left over. One row of 12:', eq: '1 × 12 = 12',
+        run: async S => { S.c = []; for (let i = 0; i < 12; i++) { const p = gp(i, 1, 12); S.c.push(S.add(at(cube(C.purple), ...p))); } await popAll(S.c, 50); dim(S, '1 row × 12', 1); } },
+      { say: '2 rows of 6 — a perfect rectangle. So 2 and 6 are factors.', eq: '2 × 6 = 12',
+        run: async S => { await arrange(S, S.c, 2, 6); dim(S, '2 rows × 6', 2); } },
+      { say: '3 rows of 4 — another rectangle. So 3 and 4 are factors.', eq: '3 × 4 = 12',
+        run: async S => { await arrange(S, S.c, 3, 4); dim(S, '3 rows × 4', 3); } },
+      { say: 'Try <b>5 rows</b>: 5 rows of 2 use 10 cubes and <span class="h">2 are left over</span>. Not a rectangle → 5 is <b>not</b> a factor of 12.', eq: '12 ÷ 5 = 2 remainder 2 ✗',
+        run: async S => {
+          await arrange(S, S.c.slice(0, 10), 5, 2);
+          await Promise.all(S.c.slice(10).map((c, j) => Promise.all([move(c, 3 + j * 1.1, 0.46, 0, 700), recolor(c, C.red)])));
+          dim(S, '5 rows × 2 + 2 left ✗', 5, 'big bad');
+        } },
+      { say: 'The factors of 12 come in pairs: <b>1 × 12, 2 × 6, 3 × 4</b>. So the factors are 1, 2, 3, 4, 6 and 12.', eq: 'Factors of 12: <span class="a">1, 2, 3, 4, 6, 12</span>',
+        run: async S => { S.c.slice(10).forEach(c => recolor(c, C.purple)); await arrange(S, S.c, 3, 4); dim(S, '1×12 · 2×6 · 3×4', 3, 'big ok'); } },
+      { say: 'Now <b>7 cubes</b>. Try 2 rows: 2 rows of 3 and <span class="h">1 left over</span> ✗. Try 3 rows: ✗ …', eq: '7 ÷ 2 = 3 remainder 1 ✗',
+        run: async S => {
+          await Promise.all(S.c.slice(7).map(c => vanish(c, 300)));
+          const s = S.c.slice(0, 7);
+          await arrange(S, s.slice(0, 6), 2, 3);
+          await Promise.all([move(s[6], 2.6, 0.46, 0, 600), recolor(s[6], C.red)]);
+          dim(S, '2 rows × 3 + 1 left ✗', 2, 'big bad');
+        } },
+      { say: 'The only rectangle is <b>1 row of 7</b>. A number with exactly two factors (1 and itself) is a <b>PRIME</b> number. 1 is neither prime nor composite; 12 (many rectangles) is <b>composite</b>.', eq: '7 = 1 × 7 only → <span class="a">7 is PRIME</span>',
+        run: async S => { const s = S.c.slice(0, 7); recolor(s[6], C.green); s.forEach(c => recolor(c, C.green)); await arrange(S, s, 1, 7); dim(S, '1 row × 7 — only one way!', 1, 'big ok'); } }
+    ]
+  });
+}
+
+/* ================================================================
+   14. PRIME FACTOR TREE
+   ================================================================ */
+{
+  const SPL = [[1260, 2, 630, '1260 is even → ÷ 2'], [630, 2, 315, '630 is even → ÷ 2'], [315, 3, 105, 'digit sum 3+1+5 = 9 → ÷ 3'], [105, 3, 35, 'digit sum 1+0+5 = 6 → ÷ 3'], [35, 5, 7, '35 ends in 5 → ÷ 5']];
+  const nodeBall = (S, n, color, x, y) => { const b = S.add(at(ball(0.62, color), x, y, 0)); const l = lbl(inr(n), 'node'); b.add(l); return b; };
+  function stick(S, a, b) {
+    const d = b.clone().sub(a), len = d.length();
+    const m = shadowy(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, len, 12), mat(C.dark)));
+    m.position.copy(a).add(b).multiplyScalar(0.5);
+    m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize());
+    return S.add(m);
+  }
+  lesson({
+    id: 'ftree', group: 'Factors & multiples', title: 'Prime factor tree (1260)', cam: [1, 6.8, 22, 0.5, 5.6, 0],
+    steps: [
+      { say: 'Break <b>1260</b> into prime numbers. Always divide by the <b>smallest prime</b> that works: try 2, then 3, then 5, then 7.', eq: '1260 = ?',
+        run: async S => { S.pos = V(-4, 10.4, 0); S.root1 = nodeBall(S, 1260, C.hun, -4, 10.4); await pop(S.root1, 500); } },
+      ...SPL.map(([n, p, q, why], i) => ({
+        say: `${why}: <b>${inr(n)} = ${p} × ${inr(q)}</b>. <span class="g">${p} is prime</span> — its branch stops.${q === 7 ? ' And <span class="g">7 is prime</span> too — the tree is finished!' : ''}`,
+        eq: `${inr(n)} = <span class="g">${p}</span> × ${q === 7 ? '<span class="g">7</span>' : inr(q)}`,
+        run: async S => {
+          const a = S.pos.clone(), L = a.clone().add(V(-1.5, -1.6, 0)), R = a.clone().add(V(1.5, -1.6, 0));
+          const s1 = stick(S, a, L), s2 = stick(S, a, R);
+          await popAll([s1, s2], 80, 350);
+          const pb = nodeBall(S, p, C.green, L.x, L.y), qb = nodeBall(S, q, q === 7 ? C.green : C.hun, R.x, R.y);
+          await popAll([pb, qb], 150, 450);
+          S.pos = R;
+        }
+      })),
+      { say: 'Collect all the green <b>primes</b> and multiply them: that is the prime factorisation. Repeated primes are written with a small power (<b>index notation</b>).', eq: '1260 = 2 × 2 × 3 × 3 × 5 × 7 = <span class="a">2² × 3² × 5 × 7</span>',
+        run: async S => {
+          const ps = [2, 2, 3, 3, 5, 7], items = [];
+          ps.forEach((p, i) => { items.push(nodeBall(S, p, C.green, -5 + i * 2, 0.64)); if (i < 5) items.push(S.add(at(lbl('×', 'big plain'), -4 + i * 2, 0.64, 0))); });
+          await popAll(items, 110, 420);
+        } }
+    ]
+  });
+}
+
+/* ================================================================
+   15. MULTIPLES & LCM – FROGS
+   ================================================================ */
+{
+  const SX = i => -12 + i;
+  function frog(color) {
+    const g = new THREE.Group(); g.scale.setScalar(1.35); g.userData.baseScale = 1.35;
+    g.add(at(ball(0.33, color), 0, 0.33, 0));
+    [-0.13, 0.13].forEach(x => { g.add(at(ball(0.1, '#ffffff'), x, 0.6, 0.18)); g.add(at(ball(0.045, '#222222'), x, 0.62, 0.26)); });
+    return g;
+  }
+  async function hop(S, f, step, z, color, marks) {
+    for (let v = step; v <= 24; v += step) {
+      await arc(f, SX(v), 0.22, z, 1.3, 420);
+      const m = S.add(at(disc(0.3, 0.05, color), SX(v), 0.24, z)); marks.push(m); pop(m, 250);
+      await wait(90);
+    }
+  }
+  lesson({
+    id: 'lcm', group: 'Factors & multiples', title: 'Multiples & LCM: hopping frogs', cam: [0, 10.5, 19, 0, 0, -0.4],
+    steps: [
+      { say: 'Two frogs start at 0. The <span style="color:#5b8def;font-weight:700">blue frog</span> jumps <b>4</b> stones at a time. The <span style="color:#f28c28;font-weight:700">orange frog</span> jumps <b>6</b>.', eq: 'jumps of 4 &nbsp;·&nbsp; jumps of 6',
+        run: async S => {
+          S.st = []; const ls = [];
+          for (let i = 0; i <= 24; i++) { S.st.push(S.add(at(blk(0.86, 0.22, 2, C.grey, 0.06), SX(i), 0.11, 0))); ls.push(S.add(at(lbl(String(i), 'sm plain'), SX(i), 0.1, 1.55))); }
+          await popAll(S.st, 20, 300); popAll(ls, 10, 200);
+          S.fa = S.add(at(frog(C.blue), SX(0), 0.22, -0.5)); S.fb = S.add(at(frog(C.orange), SX(0), 0.22, 0.5));
+          await popAll([S.fa, S.fb], 150);
+        } },
+      { say: 'The blue frog lands on the <b>multiples of 4</b>: 4, 8, 12, 16, 20, 24.', eq: 'Multiples of 4: 4, 8, 12, 16, 20, 24',
+        run: async S => { S.ma = []; await hop(S, S.fa, 4, -0.5, C.blue, S.ma); } },
+      { say: 'The orange frog lands on the <b>multiples of 6</b>: 6, 12, 18, 24.', eq: 'Multiples of 6: 6, 12, 18, 24',
+        run: async S => { S.mb = []; await hop(S, S.fb, 6, 0.5, C.orange, S.mb); } },
+      { say: 'Both frogs landed on <b>12</b> and <b>24</b> — the <b>common multiples</b>. The <b>first</b> (lowest) one is the <b>LCM</b>.', eq: 'LCM of 4 and 6 = <span class="a">12</span>',
+        run: async S => {
+          await Promise.all([12, 24].map((v, i) => Promise.all([recolor(S.st[v], C.green), bounce(S.st[v], 0.5, 420, i * 200)])));
+          const l1 = S.add(at(lbl('LCM = 12', 'ok big'), SX(12), 1.9, 0)); const l2 = S.add(at(lbl('common', 'ok'), SX(24), 1.7, 0));
+          await popAll([l1, l2], 200);
+        } },
+      { say: 'LCM word problems are about things that <b>repeat</b> and <b>meet again</b>. Two bells ring every 4 and 6 minutes and ring together at 8:00 → together again after <b>12 minutes</b>, at 8:12.', eq: 'repeat · together again · smallest number divisible by all → <span class="a">LCM</span>',
+        run: async S => { await Promise.all([bounce(S.fa, 0.8), bounce(S.fb, 0.8, 420, 150)]); } }
+    ]
+  });
+}
+
+/* ================================================================
+   16. HCF – CUTTING RIBBONS
+   ================================================================ */
+{
+  const L = [36, 60, 84], k = 0.18, x0 = -8.6, ZR = [-2.8, 0, 2.8], COL = ['#ef7d6d', '#f3c44f', '#f28bb3'], GAP = 0.28;
+  function cut(S, p, good) {
+    return Promise.all(L.map(async (len, r) => {
+      if (S.seg[r]) {
+        await Promise.all(S.seg[r].map(m => move(m, m.userData.cx, null, null, 350)));
+        S.seg[r].forEach(m => m.visible = false);
+      }
+      const P = p || len, n = Math.floor(len / P), rest = len % P, segs = [];
+      for (let j = 0; j < n; j++) { const m = S.add(at(blk(P * k - 0.04, 0.3, 0.9, COL[r], 0.06), x0 + (j + 0.5) * P * k, 0.15, ZR[r])); m.userData.cx = m.position.x; m.userData.j = j; segs.push(m); }
+      if (rest) { const m = S.add(at(blk(rest * k - 0.04, 0.3, 0.9, C.red, 0.06), x0 + n * P * k + rest * k / 2, 0.15, ZR[r])); m.userData.cx = m.position.x; m.userData.j = n; segs.push(m); }
+      S.seg[r] = segs;
+      if (n > 1 || rest) await Promise.all(segs.map(m => move(m, m.userData.cx + m.userData.j * GAP, null, null, 500)));
+      const endX = x0 + len * k + segs.length * GAP + 1.8;
+      setLbl(S.res[r], !p ? '' : rest ? `${n} pieces + <b>${rest} cm left</b> ✗` : `${n} pieces ✔`, !p ? 'plain' : rest ? 'bad' : (good ? 'ok' : 'blue'));
+      S.res[r].position.set(endX, 0.3, ZR[r]);
+      fadeLbl(S.res[r], p ? 1 : 0);
+    }));
+  }
+  lesson({
+    id: 'hcf', group: 'Factors & multiples', title: 'HCF: cutting ribbons', cam: [0.6, 16, 17.5, 0.6, 0, -0.9],
+    setup: S => { S.seg = []; S.res = L.map(() => { const l = S.add(lbl('', 'plain')); fadeLbl(l, 0); return l; }); },
+    steps: [
+      { say: 'Sindhu has ribbons of <b>36 cm</b>, <b>60 cm</b> and <b>84 cm</b>. She wants to cut <b>all</b> of them into pieces of the <b>same length</b>, as <b>long</b> as possible, with nothing left over.', eq: 'the longest piece that fits 36, 60 and 84 exactly?',
+        run: async S => { await cut(S, 0, false); L.forEach((len, r) => S.add(at(lbl(len + ' cm', 'big'), x0 - 1.4, 0.3, ZR[r]))); S.seg.forEach(s => s.forEach(m => pop(m, 500))); } },
+      { say: 'Try pieces of <b>8 cm</b>: there are pieces <span class="h">left over</span>. 8 does not divide 36, 60 and 84 exactly ✗', eq: '36 ÷ 8 = 4 R 4 &nbsp; ✗',
+        run: async S => { await cut(S, 8, false); } },
+      { say: 'Try <b>6 cm</b>: it works for all three ✔ — but the pieces are short. Can we go longer?', eq: '36 ÷ 6 = 6 &nbsp;·&nbsp; 60 ÷ 6 = 10 &nbsp;·&nbsp; 84 ÷ 6 = 14 &nbsp;✔',
+        run: async S => { await cut(S, 6, false); } },
+      { say: 'Try <b>24 cm</b>: 36 cm leaves 12 cm over ✗. Too long!', eq: '36 ÷ 24 = 1 R 12 &nbsp; ✗',
+        run: async S => { await cut(S, 24, false); } },
+      { say: 'Try <b>12 cm</b>: 3 pieces, 5 pieces and 7 pieces — nothing left! 12 is the <b>Highest Common Factor</b>.', eq: 'HCF of 36, 60 and 84 = <span class="a">12 cm</span>',
+        run: async S => { await cut(S, 12, true); } },
+      { say: 'HCF problems <b>cut or share</b> things into the <b>biggest equal pieces or groups</b> — the answer is <b>smaller</b> than the numbers. LCM problems wait for things to <b>meet again</b> — the answer is <b>bigger</b>.', eq: 'split into biggest equal parts → <span class="a">HCF</span> &nbsp;·&nbsp; meet again → <span class="a">LCM</span>',
+        run: async S => { await Promise.all(S.seg.flat().filter(m => m.visible).map((m, i) => bounce(m, 0.4, 380, i * 40))); } }
+    ]
+  });
+}
+
+/* ================================================================
+   17. FRACTIONS – CAKE
+   ================================================================ */
+{
+  const R = 3, H = 1.1;
+  const PIE = {};
+  function pieGeo(a0, a1) {
+    const key = a0.toFixed(4) + '_' + a1.toFixed(4);
+    if (PIE[key]) return PIE[key];
+    const s = new THREE.Shape();
+    const full = a1 - a0 >= Math.PI * 2 - 1e-6;
+    if (full) s.absarc(0, 0, R, 0, Math.PI * 2, false);
+    else { s.moveTo(0, 0); s.lineTo(R * Math.cos(a0), R * Math.sin(a0)); s.absarc(0, 0, R, a0, a1, false); s.lineTo(0, 0); }
+    const g = new THREE.ExtrudeGeometry(s, { depth: H, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 2, curveSegments: 48 });
+    g.rotateX(-Math.PI / 2);
+    g.userData.shared = true;
+    return (PIE[key] = g);
+  }
+  function wedges(S, n, cx, taken = 0) {
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const a0 = i * 2 * Math.PI / n, a1 = (i + 1) * 2 * Math.PI / n, m = (a0 + a1) / 2;
+      const w = shadowy(new THREE.Mesh(pieGeo(a0, a1), [mat(i < taken ? C.pink : C.cream), mat(C.cake)]));
+      w.position.set(cx, 0.06, 0);
+      w.userData = { cx, dir: V(Math.cos(m), 0, -Math.sin(m)), i };
+      out.push(S.add(w));
+    }
+    return out;
+  }
+  const push = (w, d, ms = 600, lift = 0) => move(w, w.userData.cx + w.userData.dir.x * d, 0.06 + lift, w.userData.dir.z * d, ms);
+  const pinkTop = w => recolor({ material: w.material[0] }, C.pink, 400);
+  lesson({
+    id: 'frac', group: 'Fractions', title: 'Fractions with a cake', cam: [0, 9, 10, 0, 0.5, 0],
+    steps: [
+      { say: 'This is <b>one whole</b> cake.', eq: '1 whole',
+        run: async S => { S.whole = wedges(S, 1, 0)[0]; await pop(S.whole, 600); } },
+      { say: 'Cut it into <b>4 EQUAL</b> pieces. Each piece is <b>one quarter</b>.', eq: `${frac(1, 4)} + ${frac(1, 4)} + ${frac(1, 4)} + ${frac(1, 4)} = 1 whole`,
+        run: async S => { S.whole.visible = false; S.q = wedges(S, 4, 0); await Promise.all(S.q.map(w => push(w, 0.35))); } },
+      { say: 'Take <b>3</b> of the 4 pieces. The fraction is <b>3/4</b>: the <b>bottom</b> number (denominator) is how many <b>equal pieces</b> the whole has; the <b>top</b> number (numerator) is how many we <b>take</b>.', eq: `${frac(3, 4)} &nbsp; <span class="s">3 pieces taken out of 4 equal pieces</span>`,
+        run: async S => { await Promise.all(S.q.slice(0, 3).map((w, i) => Promise.all([pinkTop(w), push(w, 0.9, 600, 0.25)]))); } },
+      { say: 'Cut every piece into 2. Now there are <b>8</b> pieces, and the pink part is <b>6 out of 8</b> — exactly the same amount of cake!', eq: `${frac(3, 4)} = ${frac(6, 8)} <span class="s">multiply the top and the bottom by the same number → equivalent fractions</span>`,
+        run: async S => {
+          S.q.forEach(w => w.visible = false);
+          S.e = wedges(S, 8, 0, 6);
+          S.e.forEach(w => { const par = S.q[Math.floor(w.userData.i / 2)]; w.position.copy(par.position); });
+          await wait(300);
+          await Promise.all(S.e.map(w => push(w, w.userData.i < 6 ? 0.9 : 0.35, 700, w.userData.i < 6 ? 0.25 : 0)));
+        } },
+      { say: '<b>7/4</b> means 7 quarters. 4 quarters make one whole cake, and there are 3 quarters more. So 7/4 = <b>1 and 3/4</b> (a mixed fraction).', eq: `${frac(7, 4)} = ${frac(4, 4)} + ${frac(3, 4)} = <span class="a">1 ${frac(3, 4)}</span>`,
+        run: async S => {
+          S.e.forEach(w => w.visible = false);
+          cam(0, 12, 13, 0, 0.5, 0);
+          const a = wedges(S, 4, -3.8, 4), b = wedges(S, 4, 3.8, 3);
+          await popAll([...a, ...b], 120, 450);
+          await Promise.all([...a, ...b].map(w => push(w, 0.3)));
+          const l1 = S.add(at(lbl('4/4 = 1 whole', 'blue'), -3.8, 0.2, 4)), l2 = S.add(at(lbl('3/4', 'blue'), 3.8, 0.2, 4));
+          await popAll([l1, l2], 200);
+        } }
+    ]
+  });
+}
+
+/* ================================================================
+   18. COMPARING FRACTIONS
+   ================================================================ */
+{
+  const W = 10, x0 = -5;
+  function row(S, n, on, z, color, text) {
+    const segs = [], w = W / n;
+    for (let i = 0; i < n; i++) segs.push(S.add(at(blk(w - 0.1, 0.45, 1.1, i < on ? color : C.cream, 0.08), x0 + (i + 0.5) * w, 0.225, z)));
+    const l = text ? S.add(at(lbl(text, 'big'), x0 - 1.3, 0.3, z)) : null;
+    return { segs, l, all: l ? [...segs, l] : segs };
+  }
+  lesson({
+    id: 'fcmp', group: 'Fractions', title: 'Comparing fractions', cam: [0, 13, 10, 0, 0, 0.3],
+    steps: [
+      { say: 'Same-size bars cut into more and more equal pieces. The <b>more pieces</b> we cut, the <b>smaller</b> each piece is.', eq: `${frac(1, 2)} &gt; ${frac(1, 3)} &gt; ${frac(1, 4)} &gt; ${frac(1, 6)} &gt; ${frac(1, 8)}`,
+        run: async S => { S.rows = [[1, '1'], [2, '1/2'], [3, '1/3'], [4, '1/4'], [6, '1/6'], [8, '1/8']].map(([n, t], i) => row(S, n, 1, -5 + i * 2, C.blue, t)); for (const r of S.rows) await popAll(r.all, 40, 380); } },
+      { say: '<b>Same denominator</b> (same size pieces)? Just compare the <b>top</b> numbers: 5 pieces are more than 3 pieces.', eq: `${frac(5, 8)} &gt; ${frac(3, 8)}`,
+        run: async S => { await hideAll(S); S.r1 = row(S, 8, 3, -1.5, C.orange, '3/8'); S.r2 = row(S, 8, 5, 1.5, C.blue, '5/8'); await popAll([...S.r1.all, ...S.r2.all], 30); } },
+      { say: '<b>Different denominators</b>: which is bigger, 3/4 or 5/8? The pieces are different sizes, so we cannot compare directly.', eq: `${frac(3, 4)} &nbsp;?&nbsp; ${frac(5, 8)}`,
+        run: async S => { await Promise.all(S.r1.all.map(o => vanish(o, 300))); S.r1 = row(S, 4, 3, -1.5, C.orange, '3/4'); await popAll(S.r1.all, 60); } },
+      { say: 'Cut each quarter into 2 → <b>3/4 becomes 6/8</b> (the LCM of 4 and 8 is 8). Now both have the same pieces: 6/8 &gt; 5/8, so <b>3/4 &gt; 5/8</b>.', eq: `${frac(3, 4)} = ${frac(6, 8)} &gt; ${frac(5, 8)}`,
+        run: async S => { S.r1.segs.forEach(s => s.visible = false); const r = row(S, 8, 6, -1.5, C.orange, ''); S.r1.l.visible = true; setLbl(S.r1.l, '6/8', 'big ok'); await popAll(r.segs, 40, 350); } }
+    ]
+  });
+}
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+(function buildSide() {
+  const side = $('#side'); let g = null, n = 0;
+  LESSONS.forEach(L => {
+    if (L.group !== g) { side.insertAdjacentHTML('beforeend', `<div class="grp">${L.group}</div>`); g = L.group; }
+    n++;
+    side.insertAdjacentHTML('beforeend', `<button data-id="${L.id}"><span class="n">${n}</span>${L.title}</button>`);
+  });
+  side.addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (b) { setAuto(false); openLesson(b.dataset.id); } });
+})();
+$('#bNext').onclick = () => next();
+$('#bPrev').onclick = () => { setAuto(false); goto(STEP - 1); };
+$('#bReplay').onclick = () => goto(STEP);
+$('#bAuto').onclick = () => { setAuto(!AUTO); if (AUTO) goto(STEP); };
+$('#bVoice').onclick = () => { VOICE = !VOICE; $('#bVoice').classList.toggle('on', VOICE); if (VOICE) speak(LES.steps[STEP].say); else stopSpeech(); };
+$('#dots').onclick = e => { const d = e.target.closest('i[data-k]'); if (d) { setAuto(false); goto(+d.dataset.k); } };
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') next();
+  else if (e.key === 'ArrowLeft') { setAuto(false); goto(STEP - 1); }
+  else if (e.key === ' ') { e.preventDefault(); goto(STEP); }
+});
+
+renderer.setAnimationLoop(now => {
+  tickTweens(now);
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+});
+window.__3dReady = true;
+
+window.__app = { LESSONS, openLesson, goto, get STEP() { return STEP; }, get LES() { return LES; }, scene, get S() { return S; } };
+document.getElementById('loading').remove();
+openLesson((location.hash || '').slice(1) || LESSONS[0].id);
+</script>
+</body></html>
